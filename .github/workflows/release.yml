@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger the workflow on any tag starting with 'v'
+
+jobs:
+  release:
+    name: Release Binary
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.x # Use the desired Go version
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build Binary
+        run: env GOOS=darwin GOARCH=amd64 go build -o gotcher .
+
+      - name: Release with Notes
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./gotcher
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}

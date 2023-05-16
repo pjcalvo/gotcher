@@ -17,6 +17,17 @@ import (
 // single config
 var patchConfig *config.Config
 
+/*
+	 Todo list:
+		- parameterize authentication based on config
+		- change config to patch based on params and METHOD type
+		- parameterize CORS
+		- accept verbose as a flag or read it from file
+		- parameterize the file to be used
+		- de-duplicate code from the shoulds functions
+		- add README + docs
+		- release as a binary
+*/
 func main() {
 	cons, err := config.LoadConfig()
 	if err != nil {
@@ -39,6 +50,7 @@ func main() {
 			req.URL.Scheme = targetURL.Scheme
 			req.URL.Host = targetURL.Host
 
+			// Todo: parameterize
 			if _, ok := req.Header["Authorization"]; !ok {
 				req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", patchConfig.Token)}
 			}
@@ -60,15 +72,6 @@ func main() {
 
 	// Create an HTTP handler function that will serve as our proxy.
 	proxyHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		// Set the Access-Control-Allow-Origin header to the client's origin.
-		origin := req.Header.Get("Origin")
-		if origin != "" {
-			// 	w.Header().Set("Access-Control-Allow-Origin", origin)
-			// 	w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Headers", "")
-		}
-		// w.Header().Set("Access-Control-Allow-Methods", "*")
-
 		// Handle preflight requests
 		if req.Method == http.MethodOptions {
 			// Set the necessary CORS headers
