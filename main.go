@@ -1,78 +1,106 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"regexp"
-	"strings"
 
-	yaml "gopkg.in/yaml.v2"
+	"github.com/pjcalvo/gotcher/config"
+	"github.com/rs/cors"
 )
 
-type Config struct {
-	TargetURL string  `yaml:"target_url"`
-	Patches   []Patch `yaml:"patches"`
-}
-
-type Patch struct {
-	Pattern  string `yaml:"pattern"`
-	Status   int    `yaml:"status"`
-	BodyFile string `yaml:"body_file"`
-	Body     string `yaml:"body"`
-}
-
 // single config
-var config Config
+var patchConfig *config.Config
 
 func main() {
-
-	// read patches
-	yamlFile, err := ioutil.ReadFile("gotcher.yaml")
+	cons, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("error reading YAML file: %v", err)
+		panic(err)
 	}
-
-	err = yaml.Unmarshal(yamlFile, &config)
-	if err != nil {
-		log.Fatalf("error unmarshaling YAML data: %v", err)
-	}
-	config.Patches = cleanMatches(config.Patches)
+	patchConfig = cons
 
 	// Parse the target URL that we want to proxy to.
-	targetURL, err := url.Parse(config.TargetURL)
+	targetURL, err := url.Parse(patchConfig.TargetURL)
 	if err != nil {
 		panic(err)
 	}
 
 	// Create a new reverse proxy that will forward requests to the target URL.
-	proxy := httputil.NewSingleHostReverseProxy(targetURL)
+	// Create a new reverse proxy with a custom Director function.
+	proxy := &httputil.ReverseProxy{
+		Director: func(req *http.Request) {
+			// Modify the request as needed before forwarding it to the target.
+			req.Host = targetURL.Host
+			req.URL.Scheme = targetURL.Scheme
+			req.URL.Host = targetURL.Host
+
+			if _, ok := req.Header["Authorization"]; !ok {
+				req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", patchConfig.Token)}
+			}
+		},
+		ModifyResponse: func(resp *http.Response) error {
+			// modify the request otherwise return it as it is
+			if ok, status, body := shouldPatchResponse(resp); ok {
+				// Handle the intercepted request and return a custom response.
+				fmt.Printf("Patching RESPONSE for: %s\n	status: %v\n", resp.Request.URL.String(), status)
+				resp.Body = ioutil.NopCloser(bytes.NewReader(body))
+				resp.ContentLength = int64(len(body))
+				resp.StatusCode = status
+				return nil
+			}
+
+			return nil
+		},
+	}
 
 	// Create an HTTP handler function that will serve as our proxy.
-	proxyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check if the request should be intercepted and handled separately.
-		if ok, status, body := shouldPatch(r.RequestURI); ok {
-			// Handle the intercepted request and return a custom response.
-			handleInterceptedRequest(w, status, body)
+	proxyHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		// Set the Access-Control-Allow-Origin header to the client's origin.
+		origin := req.Header.Get("Origin")
+		if origin != "" {
+			// 	w.Header().Set("Access-Control-Allow-Origin", origin)
+			// 	w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Allow-Headers", "")
+		}
+		// w.Header().Set("Access-Control-Allow-Methods", "*")
+
+		// Handle preflight requests
+		if req.Method == http.MethodOptions {
+			// Set the necessary CORS headers
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		// Modify the request as needed before forwarding it to the target.
-		r.Host = targetURL.Host
-		r.URL.Scheme = targetURL.Scheme
-		r.URL.Host = targetURL.Host
-
+		if ok, status, body := shouldPatchRequest(req.RequestURI); ok {
+			// Handle the intercepted request and return a custom response.
+			fmt.Printf("Patching REQUEST for: %s\n	status: %v\n", req.RequestURI, status)
+			handleInterceptedRequest(w, status, body)
+			return
+		}
 		// Forward the request to the target.
-		proxy.ServeHTTP(w, r)
+		proxy.ServeHTTP(w, req)
 	})
 
+	c := cors.New(cors.Options{
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"x-internal-session-id", "content-type"},
+		AllowedMethods:   []string{"GET", "PUT", "OPTIONS", "POST"},
+		// Enable Debugging for testing, consider disabling in production
+		Debug: true,
+	})
 	// Create a new HTTPS server with the TLS configuration and proxy handler.
 	server := &http.Server{
 		Addr: ":8443",
 		// TLSConfig: tlsConfig,
-		Handler: proxyHandler,
+		Handler: c.Handler(proxyHandler),
 	}
 
 	// Start the HTTPS server and listen on port 8443.
@@ -80,32 +108,29 @@ func main() {
 }
 
 // Handle an intercepted request and return a custom response.
-func handleInterceptedRequest(w http.ResponseWriter, status int, body string) {
-	// Add your custom response logic here.
+func handleInterceptedRequest(w http.ResponseWriter, status int, body []byte) {
 	w.WriteHeader(status)
-	w.Write([]byte(body))
+	w.Write(body)
 }
 
-func shouldPatch(uri string) (ok bool, status int, body string) {
-	for _, patch := range config.Patches {
+func shouldPatchRequest(uri string) (ok bool, status int, body []byte) {
+	for _, patch := range patchConfig.Patches.Requests {
 		matched, err := regexp.MatchString(patch.Pattern, uri)
 		if err != nil {
 			return
 		}
 		if matched {
-			// patch if found
-			if patch.Body != "" {
-				body = patch.Body
-			}
-			// override the body with the content file
-			if patch.BodyFile != "" {
-				bytes, err := ioutil.ReadFile(patch.BodyFile)
-				// when naked returns become nasty
+			switch patch.Type {
+			case config.BodyTypeFile:
+				body, err = ioutil.ReadFile(patch.Body)
 				if err != nil {
 					return
 				}
-				body = string(bytes)
+			case config.BodyTypeString, config.BodyTypeJson:
+				body = []byte(patch.Body)
+				// override the body with the content file
 			}
+
 			if patch.Status != 0 {
 				status = patch.Status
 			}
@@ -116,12 +141,31 @@ func shouldPatch(uri string) (ok bool, status int, body string) {
 	return
 }
 
-func cleanMatches(patches []Patch) []Patch {
+func shouldPatchResponse(resp *http.Response) (ok bool, status int, body []byte) {
+	// naked returns for the win
+	for _, patch := range patchConfig.Patches.Responses {
+		matched, err := regexp.MatchString(patch.Pattern, resp.Request.URL.String())
+		if err != nil {
+			return
+		}
+		if matched {
+			switch patch.Type {
+			case config.BodyTypeFile:
+				body, err = ioutil.ReadFile(patch.Body)
+				if err != nil {
+					return
+				}
+			case config.BodyTypeString, config.BodyTypeJson:
+				body = []byte(patch.Body)
+				// override the body with the content file
+			}
 
-	mPatches := make([]Patch, len(patches))
-	for index, v := range patches {
-		v.Pattern = strings.ReplaceAll(v.Pattern, "*", ".*")
-		mPatches[index] = v
+			if patch.Status != 0 {
+				status = patch.Status
+			}
+
+			return true, status, body
+		}
 	}
-	return mPatches
+	return
 }
