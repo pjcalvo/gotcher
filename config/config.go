@@ -36,7 +36,7 @@ type Patch struct {
 
 func LoadConfig() (*Config, error) {
 	// read patches
-	yamlFile, err := ioutil.ReadFile("gotcher.yaml")
+	yamlFile, err := ioutil.ReadFile("pigo.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("error reading YAML file: %w", err)
 	}

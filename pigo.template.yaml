@@ -1,4 +1,4 @@
-# gotcher configuration file
+# pigo configuration file
 
 target_url: sometarget
 token: "sometoken"
