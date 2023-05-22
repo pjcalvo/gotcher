@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"github.com/pjcalvo/pigo/app"
+	"github.com/pjcalvo/rigo/cmd/cli"
 )
 
 func main() {
-	log.Fatal(app.Run())
+	log.Fatal(cli.Run())
 }

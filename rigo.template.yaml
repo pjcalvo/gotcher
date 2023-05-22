@@ -2,7 +2,7 @@
 
 target_url: sometarget
 token: "sometoken"
-patches:
+intercepts:
   responses:
     - pattern: "*front/v1/customers"
       status: 400

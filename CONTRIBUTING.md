@@ -5,7 +5,7 @@
 - add README + docs
 - parameterize the port
 - parameterize authentication based on config
-- change config to patch based on params and METHOD type
+- change config to intercept based on params and METHOD type
 - parameterize CORS
 
 ```yml
