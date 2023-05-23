@@ -34,4 +34,50 @@ Running rigo is as simple as execute the cli app passing the flags:
 
 ### Configuration file
 
-This is the configuration file
+This is a configuration file that can be used as an example:
+
+```yaml
+target_url: https://api.somerealapi.com/
+authentication:
+    bearer:
+        type: Bearer
+        token: "sometoken"
+intercept:
+  responses:
+    - match:
+        uri: "*/libraries/*/books"
+        methods: 
+          - GET
+      patch:
+        type: string
+        body: 'this is the patched body'
+  requests:
+    - match:
+        uri: "*/libraries/*/books"
+        methods: 
+          - GET
+      patch:
+        type: json
+        body: |
+          {
+            'books': [
+              {
+                "createdAt": "2022-12-30T18:00:51Z"
+            }]
+          }
+    - match:
+      uri: "*/customer"
+      methods: 
+        - GET
+        - POST
+      patch:
+        code: 500
+    - match:
+      uri: "*some-otherrequest*"
+      methods: 
+        - GET
+        - POST
+      patch:
+        body: ./file.json
+        type: file
+```
