@@ -29,7 +29,8 @@ Running rigo is as simple as execute the cli app passing the flags:
 |------|-------|-------------| ------------|
 | p    | port  | Port number to run the proxy on | 8400
 | f    | file  | Configuration file to use | rigo.yml
-| r    | record  | Record request/response instead of patching | false
+| v    | verbose  | To make the logs more verbose (useful when dealing with CORS) | false
+| record    | record  | Record request/response instead of patching | false
 
 ### Configuration file
 
