@@ -22,4 +22,4 @@ go.work
 .vscode
 *.json
 
-gotcher.yaml
+rigo.yaml
