@@ -21,7 +21,6 @@ type Config struct {
 	TargetURL      string         `yaml:"target_url"`
 	Authentication Authentication `yaml:"authentication"`
 	Intercept      InterceptGroup `yaml:"intercept"`
-	Token          string         `yaml:"token"`
 }
 
 // Authentication is provided in cases where the authentication

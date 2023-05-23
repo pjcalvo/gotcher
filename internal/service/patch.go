@@ -45,6 +45,8 @@ func shouldPatch(uri string, intercepts []config.Intercept) (ok bool, status int
 				// override the body with the content file
 			}
 
+			// default status in case of missing override
+			status = 200
 			if intercept.Patch.Status != 0 {
 				status = intercept.Patch.Status
 			}
@@ -59,6 +61,7 @@ func (i PatchService) HandleRequest(w http.ResponseWriter, r *http.Request) bool
 	if ok, status, body := shouldPatch(r.RequestURI, i.interceptConfig.Intercept.Requests); ok {
 		// Handle the intercepted request and return a custom response.
 		fmt.Printf("Patching REQUEST for: %s\n	status: %v\n", r.RequestURI, status)
+
 		w.WriteHeader(status)
 		w.Write(body)
 		return true

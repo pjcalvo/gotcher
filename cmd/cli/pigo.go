@@ -17,13 +17,15 @@ import (
 // single config
 var port int
 var configPath string
+var verbose bool
 var record bool
 
 func Run() error {
 	// flags
 	flag.IntVar(&port, "p", 8443, "port number to run the proxy")
 	flag.StringVar(&configPath, "f", "rigo.yaml", "file path to be used as the config")
-	flag.BoolVar(&record, "r", false, "wheter or not to record instead of intercept")
+	flag.BoolVar(&verbose, "v", false, "file path to be used as the config")
+	flag.BoolVar(&record, "record", false, "wheter or not to record instead of intercept")
 	flag.Parse()
 
 	interceptConfig, err := config.LoadConfig(configPath)
@@ -50,7 +52,7 @@ func Run() error {
 
 			// Todo: parameterize
 			if _, ok := req.Header["Authorization"]; !ok {
-				req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", interceptConfig.Token)}
+				req.Header["Authorization"] = []string{fmt.Sprintf("%s %s", interceptConfig.Authentication.Bearer.Type, interceptConfig.Authentication.Bearer.Token)}
 			}
 		},
 		ModifyResponse: func(resp *http.Response) error {
@@ -83,7 +85,7 @@ func Run() error {
 		AllowedHeaders:   []string{"x-internal-session-id", "content-type"},
 		AllowedMethods:   []string{"GET", "PUT", "OPTIONS", "POST"},
 		// Enable Debugging for testing, consider disabling in production
-		Debug: true,
+		Debug: verbose,
 	})
 
 	// create a new HTTPS server with the TLS configuration and proxy handler.
