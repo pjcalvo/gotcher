@@ -1,22 +1,53 @@
 # pigo configuration file
 
-target_url: sometarget
-token: "sometoken"
-intercepts:
+target_url: api-url
+authentication:
+    bearer:
+        type: Bearer
+        token: "sometoken"
+intercept:
   responses:
-    - pattern: "*front/v1/customers"
-      status: 400
-      body: ./response.json
-      type: file
-    - pattern: "*addresses*"
-      status: 400
-      type: json
-      body: |
-        {
-          "foo" : "bar"
-        }
+    - match:
+        uri: "*/services/*/contracts"
+        methods: 
+          - GET
+      patch:
+        type: string
+        body: 'this is the patched body'
   requests:
-    - pattern: "*offers"
-      status: 200
-      type: file
-      body: ./offers.json
+    - match:
+        uri: "*/services/*/contracts"
+        methods: 
+          - GET
+      patch:
+        type: json
+        body: |
+          {
+            'contracts': [
+              {
+                "cancellable": false,
+                "catalogCode": "SNE-NL-B2C-WEB-DUAL-3-YEARS",
+                "createdAt": "2022-12-30T18:00:51Z",
+                "endDate": "2023-07-01",
+                "name": "Electricity Fixed 3 Years",
+                "productCode": "SNE_NL_ELEC_FIXED_3_YEARS",
+                "startDate": "2023-01-01",
+                "status": "Activated",
+                "type": "Acquisition"
+            }]
+          }
+    - match:
+      uri: "*-nzIS7f7fva4-EbXbgMgZyDOexglSYR86xfQ2q1lgQtC_4UDAQERU2VydmljZUlkZW50aWZpZXIB_4YAAQMBAklEAf-EAAEGTnVtYmVyAf-EAAEJQWNjb3VudElEAf-IAAAAFv-DBQEBCklkZW50aWZpZXIB_4QAAABT_4cDAQERQWNjb3VudElkZW50aWZpZXIB_4gAAQIBFEJpbGxpbmdBY2NvdW50TnVtYmVyAf-EAAEUU2VydmljZUFjY291bnROdW1iZXIB_4QAAABC_4YBCQgMAAUzNDc5NgEWFQwAEjExMjAyOTkwMDAwMDAwNzkwOAEBCwoMAAcxMDM4MDEzAQsKDAAHMTAzODAxNAAA/meter-read-requests"
+      methods: 
+        - GET
+        - POST
+      patch:
+        code: 500
+    - match:
+      uri: "*-nzIS7f7fva4-EbXbgMgZyDOexglSYR86xfQ2q1lgQtC_4UDAQERU2VydmljZUlkZW50aWZpZXIB_4YAAQMBAklEAf-EAAEGTnVtYmVyAf-EAAEJQWNjb3VudElEAf-IAAAAFv-DBQEBCklkZW50aWZpZXIB_4QAAABT_4cDAQERQWNjb3VudElkZW50aWZpZXIB_4gAAQIBFEJpbGxpbmdBY2NvdW50TnVtYmVyAf-EAAEUU2VydmljZUFjY291bnROdW1iZXIB_4QAAABC_4YBCQgMAAUzNDc5NgEWFQwAEjExMjAyOTkwMDAwMDAwNzkwOAEBCwoMAAcxMDM4MDEzAQsKDAAHMTAzODAxNAAA/meter-read-requests"
+      methods: 
+        - GET
+        - POST
+      patch:
+        body: ./file.json
+        type: file

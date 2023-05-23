@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	"github.com/pjcalvo/rigo/internal/config"
+	"github.com/pjcalvo/rigo/internal/stuff"
 )
 
 type PatchService struct {
@@ -21,15 +22,6 @@ func newPatchService(c config.Config) PatchService {
 	}
 }
 
-func inArray(method string, acceptedMethods []string) bool {
-	for _, m := range acceptedMethods {
-		if m == method {
-			return true
-		}
-	}
-	return false
-}
-
 // intercept handles the logic to match and return the proper response
 // should split more
 func shouldPatch(request *http.Request, intercepts []config.Intercept) (ok bool, status int, body []byte) {
@@ -38,7 +30,7 @@ func shouldPatch(request *http.Request, intercepts []config.Intercept) (ok bool,
 		method := request.Method
 
 		// conditions to break the matching process
-		if len(intercept.Match.Methods) > 0 && !inArray(method, intercept.Match.Methods) {
+		if len(intercept.Match.Methods) > 0 && !stuff.InArray(method, intercept.Match.Methods) {
 			return
 		}
 		if intercept.Match.Uri == "" {
