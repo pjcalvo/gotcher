@@ -3,10 +3,10 @@
 ## Todo list
 
 - add README + docs
-- parameterize the port
 - parameterize authentication based on config
-- change config to intercept based on params and METHOD type
+- change config to intercept based on params
 - parameterize CORS
+- allow polling on the file each 10 seconds instead of a single load
 
 ```yml
 target_url: sometarget
@@ -57,8 +57,5 @@ intercept:
 ```
 
 - allow to use single word intercepts (reject: true -> returns a 500, notfound: true -> returns a 404)
-- accept verbose as a flag or read it from file (mid prio)
-- parameterize the file to be used (easy low prio)
-- de-duplicate code from the shoulds functions (high prio)
 - release as a binary (high prio)
-- accept an array of configurations instead of one (low prio)
+- accept an array of configurations instead of one (low prio) (maybe not necessary)
