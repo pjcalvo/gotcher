@@ -3,8 +3,10 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"strings"
 
+	"github.com/fsnotify/fsnotify"
 	"gopkg.in/yaml.v2"
 )
 
@@ -64,21 +66,58 @@ type Match struct {
 }
 
 // LoadConfig reads the given file and returns a clean Config
-func LoadConfig(filePath string) (*Config, error) {
+func (config *Config) LoadConfig(filePath string) error {
+	log.Println("Loading testing configuration")
 	yamlFile, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading YAML file: %w", err)
+		return fmt.Errorf("error reading YAML file: %w", err)
 	}
 
-	var config Config
 	err = yaml.Unmarshal(yamlFile, &config)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling YAML data: %w", err)
+		return fmt.Errorf("error unmarshaling YAML data: %w", err)
 	}
 	config.Intercept.Requests = cleanMatches(config.Intercept.Requests)
 	config.Intercept.Responses = cleanMatches(config.Intercept.Responses)
 
-	return &config, nil
+	return nil
+}
+
+func (config *Config) Watch(configPath string) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal("NewWatcher failed: ", err)
+	}
+	defer watcher.Close()
+
+	done := make(chan bool)
+	go func() {
+		defer close(done)
+		log.Println("Watching for changes in", configPath)
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Op.String() == "WRITE" {
+					log.Println("Config file changed:", configPath)
+					config.LoadConfig(configPath)
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Println("error:", err)
+			}
+		}
+	}()
+
+	err = watcher.Add(configPath)
+	if err != nil {
+		log.Fatal("Add failed:", err)
+	}
+	<-done
 }
 
 // cleanMatches is a function that converts * to

@@ -28,7 +28,12 @@ func Run() error {
 	flag.BoolVar(&record, "record", false, "wheter or not to record instead of intercept")
 	flag.Parse()
 
-	interceptConfig, err := config.LoadConfig(configPath)
+	// Load configuration and watch for changes during runtime
+	interceptConfig := &config.Config{}
+	err := interceptConfig.LoadConfig(configPath)
+	go interceptConfig.Watch(configPath)
+
+	
 	if err != nil {
 		return err
 	}
