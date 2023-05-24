@@ -1,0 +1,50 @@
+project_name: rigo
+release:
+  github:
+    owner: pjcalvo
+    name: rigo
+builds:
+  - id: rigo-darwin-amd64
+    ldflags:
+      - -s -w -X github.com/pjcalvo/rigo/pkg/version.Version={{.Version}}
+    binary: rigo
+    main: ./main.go
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    goarch:
+      - amd64
+  - id: rigo-linux-amd64
+    ldflags:
+      - -s -w -X github.com/pjcalvo/rigo/pkg/version.Version={{.Version}}
+    binary: rigo
+    main: ./main.go
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: rigo-windows-amd64
+    ldflags:
+      - -s -w -X github.com/pjcalvo/rigo/pkg/version.Version={{.Version}}
+    binary: rigo
+    main: ./main.go
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    goarch:
+      - amd64
+
+checksum:
+  name_template: "{{ .ProjectName }}checksums.txt"
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

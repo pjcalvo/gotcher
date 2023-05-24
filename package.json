@@ -1,0 +1,32 @@
+{
+    "name": "rigo-proxy-beta",
+    "version": "0.0.4-alpha",
+    "description": "A proxy cli for itercepting network",
+    "main": "index.js",
+    "scripts": {
+        "release-go" : "goreleaser release --snapshot --clean",
+        "postinstall": "node postinstall.js install",
+        "preuninstall": "node postinstall.js uninstall"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/pjcalvo/rigo.git"
+    },
+    "author": "Pablo Calvo",
+    "license": "UNLICENSED",
+    "bugs": {
+        "url": "https://github.com/pjcalvo/rigo/issues"
+    },
+    "goBinary": {
+        "name": "rigo",
+        "path": "./bin"
+    },
+    "homepage": "https://github.com/pjcalvo/rigo#readme",
+    "files": [
+        "dist",
+        "postinstall.js"
+    ],
+    "dependencies": {
+        "mkdirp": "^1.0.4"
+    }
+}

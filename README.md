@@ -11,8 +11,10 @@ Rigo becomes really useful when testing apps or services that are interconnected
 
 ## Install rigo
 
+Rigo is distributed as a npm package:
+
 ```bash
-# work in progress
+npm i -g rigo-proxy
 ```
 
 ### Running rigo
@@ -20,7 +22,7 @@ Rigo becomes really useful when testing apps or services that are interconnected
 Running rigo is as simple as execute the cli app passing the flags:
 
 ```bash
-./rigo -p 8400 -f rigo.yaml
+rigo -p 8400 -f rigo.yaml
 ```
 
 ### Flags
