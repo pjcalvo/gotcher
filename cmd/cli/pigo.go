@@ -14,18 +14,20 @@ import (
 	"github.com/rs/cors"
 )
 
-// single config
-var port int
-var configPath string
-var verbose bool
-var record bool
+// single config with default values
+var (
+	port       int    = 8443
+	configPath string = "rigo.yaml"
+	verbose    bool   = false
+	record     bool   = false
+)
 
 func Run() error {
 	// flags
-	flag.IntVar(&port, "p", 8443, "port number to run the proxy")
-	flag.StringVar(&configPath, "f", "rigo.yaml", "file path to be used as the config")
-	flag.BoolVar(&verbose, "v", false, "file path to be used as the config")
-	flag.BoolVar(&record, "record", false, "wheter or not to record instead of intercept")
+	flag.IntVar(&port, "p", port, "port number to run the proxy")
+	flag.StringVar(&configPath, "f", configPath, "file path to be used as the config")
+	flag.BoolVar(&verbose, "v", verbose, "file path to be used as the config")
+	flag.BoolVar(&record, "record", record, "wheter or not to record instead of intercept")
 	flag.Parse()
 
 	interceptConfig, err := config.LoadConfig(configPath)

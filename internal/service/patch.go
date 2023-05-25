@@ -6,10 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 
 	"github.com/pjcalvo/rigo/internal/config"
-	"github.com/pjcalvo/rigo/internal/stuff"
 )
 
 type PatchService struct {
@@ -22,26 +20,18 @@ func newPatchService(c config.Config) PatchService {
 	}
 }
 
-// intercept handles the logic to match and return the proper response
-// should split more
-func shouldPatch(request *http.Request, intercepts []config.Intercept) (ok bool, status int, body []byte) {
+// getPatchDetails checks if a request should be patched and return the proper details
+func getPatchDetails(request *http.Request, intercepts []config.Intercept) (ok bool, status int, body []byte) {
 	for _, intercept := range intercepts {
-		uri := request.URL.String()
-		method := request.Method
-
-		// conditions to break the matching process
-		if len(intercept.Match.Methods) > 0 && !stuff.InArray(method, intercept.Match.Methods) {
-			return
-		}
-		if intercept.Match.Uri == "" {
-			return
-		}
-		matched, err := regexp.MatchString(intercept.Match.Uri, uri)
+		matched, err := isPatchable(verifyInterceptParams{
+			uri:    request.URL.String(),
+			method: request.Method,
+		}, intercept)
 		if err != nil {
 			return
 		}
-		// matched
 		if matched {
+			// define body to return
 			switch intercept.Patch.Type {
 			case config.BodyTypeFile:
 				body, err = ioutil.ReadFile(intercept.Patch.Body)
@@ -50,10 +40,8 @@ func shouldPatch(request *http.Request, intercepts []config.Intercept) (ok bool,
 				}
 			case config.BodyTypeString, config.BodyTypeJson:
 				body = []byte(intercept.Patch.Body)
-				// override the body with the content file
 			}
-
-			// default status in case of missing override
+			// define status to return (default to 200)
 			status = 200
 			if intercept.Patch.Status != 0 {
 				status = intercept.Patch.Status
@@ -66,7 +54,7 @@ func shouldPatch(request *http.Request, intercepts []config.Intercept) (ok bool,
 }
 
 func (i PatchService) HandleRequest(w http.ResponseWriter, r *http.Request) bool {
-	if ok, status, body := shouldPatch(r, i.interceptConfig.Intercept.Requests); ok {
+	if ok, status, body := getPatchDetails(r, i.interceptConfig.Intercept.Requests); ok {
 		// Handle the intercepted request and return a custom response.
 		fmt.Printf("Patching REQUEST for: %s\n	status: %v\n", r.RequestURI, status)
 
@@ -78,7 +66,7 @@ func (i PatchService) HandleRequest(w http.ResponseWriter, r *http.Request) bool
 }
 
 func (i PatchService) HandleResponse(r *http.Response) {
-	if ok, status, body := shouldPatch(r.Request, i.interceptConfig.Intercept.Responses); ok {
+	if ok, status, body := getPatchDetails(r.Request, i.interceptConfig.Intercept.Responses); ok {
 		// Handle the intercepted request and return a custom response.
 		// Tood: implement logging
 		fmt.Printf("Patching RESPONSE for: %s\n	status: %v\n", r.Request.URL.String(), status)
