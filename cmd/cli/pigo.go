@@ -29,9 +29,9 @@ func Run() error {
 	flag.Parse()
 
 	// Load configuration and watch for changes during runtime
-	interceptConfig := &config.Config{}
-	err := interceptConfig.LoadConfig(configPath)
-	go interceptConfig.Watch(configPath)
+	interceptConfig := config.NewConfig(configPath)
+	err := interceptConfig.LoadConfig()
+	go interceptConfig.Watch()
 
 	
 	if err != nil {

@@ -23,6 +23,7 @@ type Config struct {
 	TargetURL      string         `yaml:"target_url"`
 	Authentication Authentication `yaml:"authentication"`
 	Intercept      InterceptGroup `yaml:"intercept"`
+	FilePath	   string  
 }
 
 // Authentication is provided in cases where the authentication
@@ -65,10 +66,14 @@ type Match struct {
 	Methods []string `yaml:"methods"`
 }
 
+func NewConfig(filePath string) *Config {
+	return &Config{FilePath: filePath}
+  }
+
 // LoadConfig reads the given file and returns a clean Config
-func (config *Config) LoadConfig(filePath string) error {
+func (config *Config) LoadConfig() error {
 	log.Println("Loading testing configuration")
-	yamlFile, err := ioutil.ReadFile(filePath)
+	yamlFile, err := ioutil.ReadFile(config.FilePath)
 	if err != nil {
 		return fmt.Errorf("error reading YAML file: %w", err)
 	}
@@ -83,7 +88,7 @@ func (config *Config) LoadConfig(filePath string) error {
 	return nil
 }
 
-func (config *Config) Watch(configPath string) {
+func (config *Config) Watch() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal("NewWatcher failed: ", err)
@@ -93,7 +98,7 @@ func (config *Config) Watch(configPath string) {
 	done := make(chan bool)
 	go func() {
 		defer close(done)
-		log.Println("Watching for changes in", configPath)
+		log.Println("Watching for changes in", config.FilePath)
 		for {
 			select {
 			case event, ok := <-watcher.Events:
@@ -101,8 +106,8 @@ func (config *Config) Watch(configPath string) {
 					return
 				}
 				if event.Op.String() == "WRITE" {
-					log.Println("Config file changed:", configPath)
-					config.LoadConfig(configPath)
+					log.Println("Config file changed:", config.FilePath)
+					config.LoadConfig()
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
@@ -113,7 +118,7 @@ func (config *Config) Watch(configPath string) {
 		}
 	}()
 
-	err = watcher.Add(configPath)
+	err = watcher.Add(config.FilePath)
 	if err != nil {
 		log.Fatal("Add failed:", err)
 	}
