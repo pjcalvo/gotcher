@@ -42,7 +42,7 @@ func shouldRecord(response *http.Response, intercept config.Intercept) (ok bool)
 	if ok {
 		// write response to file
 		// if the filename is specified then use it as the name
-		// otherwise build one based on
+		// otherwise build one based on the request details
 		var filename string
 		if intercept.Patch.Type == config.BodyTypeFile {
 			filename = intercept.Patch.Body
