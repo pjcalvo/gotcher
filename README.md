@@ -15,7 +15,7 @@ Rigo becomes really useful when testing apps or services that are interconnected
 # work in progress
 ```
 
-### Running rigo
+## Running rigo
 
 Running rigo is as simple as execute the cli app passing the flags:
 
@@ -100,3 +100,17 @@ intercept:
         body: ./file.json
         type: file
 ```
+
+## Recording
+
+Note: *Only json requests are supported for now*
+
+Rigo allows also for recording matching network requests. This is very useful when the body that we need to patch later is too big or complex, or we just want to have a copy for testing.
+
+To enter record mode just use the flag `record`:
+
+```bash
+rigo --record
+```
+
+Rigo will create a "record file" for all the matching requests. If the intercept includes `type: file` for the patch then the same name will be used for the recorded filename, otherwise the name will be infered from the request `method` and the `url`. For example: *GET_https:_api.someurl.com_this_v1_books.json*.
