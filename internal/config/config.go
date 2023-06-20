@@ -3,8 +3,10 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"strings"
 
+	"github.com/fsnotify/fsnotify"
 	"gopkg.in/yaml.v2"
 )
 
@@ -21,6 +23,7 @@ type Config struct {
 	TargetURL      string         `yaml:"target_url"`
 	Authentication Authentication `yaml:"authentication"`
 	Intercept      InterceptGroup `yaml:"intercept"`
+	FilePath	   string  
 }
 
 // Authentication is provided in cases where the authentication
@@ -63,22 +66,63 @@ type Match struct {
 	Methods []string `yaml:"methods"`
 }
 
+func NewConfig(filePath string) *Config {
+	return &Config{FilePath: filePath}
+  }
+
 // LoadConfig reads the given file and returns a clean Config
-func LoadConfig(filePath string) (*Config, error) {
-	yamlFile, err := ioutil.ReadFile(filePath)
+func (config *Config) LoadConfig() error {
+	log.Println("Loading testing configuration")
+	yamlFile, err := ioutil.ReadFile(config.FilePath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading YAML file: %w", err)
+		return fmt.Errorf("error reading YAML file: %w", err)
 	}
 
-	var config Config
 	err = yaml.Unmarshal(yamlFile, &config)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling YAML data: %w", err)
+		return fmt.Errorf("error unmarshaling YAML data: %w", err)
 	}
 	config.Intercept.Requests = cleanMatches(config.Intercept.Requests)
 	config.Intercept.Responses = cleanMatches(config.Intercept.Responses)
 
-	return &config, nil
+	return nil
+}
+
+func (config *Config) Watch() {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal("NewWatcher failed: ", err)
+	}
+	defer watcher.Close()
+
+	done := make(chan bool)
+	go func() {
+		defer close(done)
+		log.Println("Watching for changes in", config.FilePath)
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Op.String() == "WRITE" {
+					log.Println("Config file changed:", config.FilePath)
+					config.LoadConfig()
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Println("error:", err)
+			}
+		}
+	}()
+
+	err = watcher.Add(config.FilePath)
+	if err != nil {
+		log.Fatal("Add failed:", err)
+	}
+	<-done
 }
 
 // cleanMatches is a function that converts * to
