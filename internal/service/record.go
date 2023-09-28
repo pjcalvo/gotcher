@@ -75,14 +75,14 @@ func shouldRecord(response *http.Response, intercept config.Intercept) (ok bool)
 
 func (i RecordService) HandleRequest(w http.ResponseWriter, r *http.Request) bool {
 	// not implemented we might want to limit this functionality
-	for range i.interceptConfig.Intercept.Requests {
+	for range i.interceptConfig.Values.Intercept.Requests {
 		return false
 	}
 	return false
 }
 
 func (i RecordService) HandleResponse(r *http.Response) {
-	for _, intercept := range i.interceptConfig.Intercept.Responses {
+	for _, intercept := range i.interceptConfig.Values.Intercept.Responses {
 		if ok := shouldRecord(r, intercept); ok {
 			fmt.Printf("Recording RESPONSE for: %s\n	status: %v\n", r.Request.URL.String(), r.Status)
 		}

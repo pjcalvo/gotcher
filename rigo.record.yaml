@@ -1,0 +1,16 @@
+# pigo configuration file
+
+target_url: https://api.uat-artemishell.com
+authentication:
+    bearer:
+        type: Bearer
+        token: "00D3L0000000eB9!AR0AQA.yKTVskey8YMONKUTp42jaiQGyrt_XikAqYK7eI_CNDdiuQQbHX79X90PIgPAAojOqpbQ0K1oFZwHlvEFj7P6kNe6m"
+intercept:
+  requests:
+    - match:
+        uri: "*v1/customers"
+        methods: 
+          - GET
+      patch:
+        type: string
+        body: papaya.com

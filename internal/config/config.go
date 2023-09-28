@@ -1,11 +1,7 @@
 package config
 
 import (
-	"fmt"
-	"io/ioutil"
 	"strings"
-
-	"gopkg.in/yaml.v2"
 )
 
 type BodyType string
@@ -16,8 +12,8 @@ const (
 	BodyTypeJson   BodyType = "json"
 )
 
-// Config is the top level configuration
-type Config struct {
+// ConfigValues is the top level configuration
+type ConfigValues struct {
 	TargetURL      string         `yaml:"target_url"`
 	Authentication Authentication `yaml:"authentication"`
 	Intercept      InterceptGroup `yaml:"intercept"`
@@ -61,24 +57,6 @@ type Match struct {
 		Value string `yaml:"value"`
 	} `yaml:"params"`
 	Methods []string `yaml:"methods"`
-}
-
-// LoadConfig reads the given file and returns a clean Config
-func LoadConfig(filePath string) (*Config, error) {
-	yamlFile, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading YAML file: %w", err)
-	}
-
-	var config Config
-	err = yaml.Unmarshal(yamlFile, &config)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling YAML data: %w", err)
-	}
-	config.Intercept.Requests = cleanMatches(config.Intercept.Requests)
-	config.Intercept.Responses = cleanMatches(config.Intercept.Responses)
-
-	return &config, nil
 }
 
 // cleanMatches is a function that converts * to

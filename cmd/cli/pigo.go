@@ -30,15 +30,17 @@ func Run() error {
 	flag.BoolVar(&record, "record", record, "wheter or not to record instead of intercept")
 	flag.Parse()
 
-	interceptConfig, err := config.LoadConfig(configPath)
+	// Load configuration and watch for changes during runtime
+	interceptConfig, err := config.NewConfig(configPath)
 	if err != nil {
 		return err
 	}
+	go interceptConfig.Watch()
 
 	interceptService := service.NewInterceptService(*interceptConfig, record)
 
 	// Parse the target URL that we want to proxy to.
-	targetURL, err := url.Parse(interceptConfig.TargetURL)
+	targetURL, err := url.Parse(interceptConfig.Values.TargetURL)
 	if err != nil {
 		return err
 	}
@@ -54,7 +56,7 @@ func Run() error {
 
 			// Todo: parameterize
 			if _, ok := req.Header["Authorization"]; !ok {
-				req.Header["Authorization"] = []string{fmt.Sprintf("%s %s", interceptConfig.Authentication.Bearer.Type, interceptConfig.Authentication.Bearer.Token)}
+				req.Header["Authorization"] = []string{fmt.Sprintf("%s %s", interceptConfig.Values.Authentication.Bearer.Type, interceptConfig.Values.Authentication.Bearer.Token)}
 			}
 		},
 		ModifyResponse: func(resp *http.Response) error {
